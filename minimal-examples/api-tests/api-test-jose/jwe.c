@@ -9,331 +9,703 @@
 
 #include <libwebsockets.h>
 
+/*
+ * These are the inputs and outputs from the worked example in RFC7516
+ * Appendix A.1
+ */
 
-/* A.2.  Example JWE using RSAES-PKCS1-v1_5 and AES_128_CBC_HMAC_SHA_256 */
+
+/* A.2.  Example JWE using RSAES-PKCS1-v1_5 and AES_128_CBC_HMAC_SHA_256
+ *
+ * This example encrypts the plaintext "Live long and prosper." to the
+ * recipient using RSAES-PKCS1-v1_5 for key encryption and
+ * AES_128_CBC_HMAC_SHA_256 for content encryption.
+ */
 
 /* "Live long and prosper." */
-static
-uint8_t
+static uint8_t
 
-#if 0
-lws_jwe_ex_a2_plaintext[] = {
+ex_a2_ptext[] = {
+	76, 105, 118, 101, 32, 108, 111, 110,
+	103, 32, 97, 110, 100, 32,  112, 114,
+	111, 115, 112, 101, 114, 46
+}, *lws_jwe_ex_a2_jwk_json = (uint8_t *)
+	"{"
+	 "\"kty\":\"RSA\","
+	 "\"n\":\"sXchDaQebHnPiGvyDOAT4saGEUetSyo9MKLOoWFsueri23bOdgWp4Dy1Wl"
+		 "UzewbgBHod5pcM9H95GQRV3JDXboIRROSBigeC5yjU1hGzHHyXss8UDpre"
+		 "cbAYxknTcQkhslANGRUZmdTOQ5qTRsLAt6BTYuyvVRdhS8exSZEy_c4gs_"
+		 "7svlJJQ4H9_NxsiIoLwAEk7-Q3UXERGYw_75IDrGA84-lA_-Ct4eTlXHBI"
+		 "Y2EaV7t7LjJaynVJCpkv4LKjTTAumiGUIuQhrNhZLuF_RJLqHpM2kgWFLU"
+		 "7-VTdL1VbC2tejvcI2BlMkEpk1BzBZI0KQB0GaDWFLN-aEAw3vRw\","
+	 "\"e\":\"AQAB\","
+	 "\"d\":\"VFCWOqXr8nvZNyaaJLXdnNPXZKRaWCjkU5Q2egQQpTBMwhprMzWzpR8Sxq"
+		 "1OPThh_J6MUD8Z35wky9b8eEO0pwNS8xlh1lOFRRBoNqDIKVOku0aZb-ry"
+		 "nq8cxjDTLZQ6Fz7jSjR1Klop-YKaUHc9GsEofQqYruPhzSA-QgajZGPbE_"
+		 "0ZaVDJHfyd7UUBUKunFMScbflYAAOYJqVIVwaYR5zWEEceUjNnTNo_CVSj"
+		 "-VvXLO5VZfCUAVLgW4dpf1SrtZjSt34YLsRarSb127reG_DUwg9Ch-Kyvj"
+		 "T1SkHgUWRVGcyly7uvVGRSDwsXypdrNinPA4jlhoNdizK2zF2CWQ\","
+	 "\"p\":\"9gY2w6I6S6L0juEKsbeDAwpd9WMfgqFoeA9vEyEUuk4kLwBKcoe1x4HG68"
+		 "ik918hdDSE9vDQSccA3xXHOAFOPJ8R9EeIAbTi1VwBYnbTp87X-xcPWlEP"
+		 "krdoUKW60tgs1aNd_Nnc9LEVVPMS390zbFxt8TN_biaBgelNgbC95sM\","
+	 "\"q\":\"uKlCKvKv_ZJMVcdIs5vVSU_6cPtYI1ljWytExV_skstvRSNi9r66jdd9-y"
+		 "BhVfuG4shsp2j7rGnIio901RBeHo6TPKWVVykPu1iYhQXw1jIABfw-MVsN"
+		 "-3bQ76WLdt2SDxsHs7q7zPyUyHXmps7ycZ5c72wGkUwNOjYelmkiNS0\","
+	 "\"dp\":\"w0kZbV63cVRvVX6yk3C8cMxo2qCM4Y8nsq1lmMSYhG4EcL6FWbX5h9yuv"
+		 "ngs4iLEFk6eALoUS4vIWEwcL4txw9LsWH_zKI-hwoReoP77cOdSL4AVcra"
+		 "Hawlkpyd2TWjE5evgbhWtOxnZee3cXJBkAi64Ik6jZxbvk-RR3pEhnCs\","
+	 "\"dq\":\"o_8V14SezckO6CNLKs_btPdFiO9_kC1DsuUTd2LAfIIVeMZ7jn1Gus_Ff"
+		 "7B7IVx3p5KuBGOVF8L-qifLb6nQnLysgHDh132NDioZkhH7mI7hPG-PYE_"
+		 "odApKdnqECHWw0J-F0JWnUd6D2B_1TvF9mXA2Qx-iGYn8OVV1Bsmp6qU\","
+	 "\"qi\":\"eNho5yRBEBxhGBtQRww9QirZsB66TrfFReG_CcteI1aCneT0ELGhYlRlC"
+		 "tUkTRclIfuEPmNsNDPbLoLqqCVznFbvdB7x-Tl-m0l_eFTj2KiqwGqE9PZ"
+		 "B9nNTwMVvH3VRRSLWACvPnSiwP8N5Usy-WRXS-V7TbpxIhvepTfE0NNo\""
+	"}",
+
+*ex_a2_compact = (uint8_t *)
+	"eyJhbGciOiJSU0ExXzUiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0"
+	"."
+	"UGhIOguC7IuEvf_NPVaXsGMoLOmwvc1GyqlIKOK1nN94nHPoltGRhWhw7Zx0-kFm"
+	"1NJn8LE9XShH59_i8J0PH5ZZyNfGy2xGdULU7sHNF6Gp2vPLgNZ__deLKxGHZ7Pc"
+	"HALUzoOegEI-8E66jX2E4zyJKx-YxzZIItRzC5hlRirb6Y5Cl_p-ko3YvkkysZIF"
+	"NPccxRU7qve1WYPxqbb2Yw8kZqa2rMWI5ng8OtvzlV7elprCbuPhcCdZ6XDP0_F8"
+	"rkXds2vE4X-ncOIM8hAYHHi29NX0mcKiRaD0-D-ljQTP-cFPgwCp6X-nZZd9OHBv"
+	"-B3oWh2TbqmScqXMR4gp_A"
+	"."
+	"AxY8DCtDaGlsbGljb3RoZQ"
+	"."
+	"KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY"
+	"."
+	"9hH0vgRfYgPnAHOd8stkvw"
+;
+
+static int
+test_jwe_a2(struct lws_context *context)
+{
+	struct lws_jose jose;
+	struct lws_jws jws;
+	struct lws_jwk jwk;
+	char buf[2048];
+	int n, ret = -1;
+
+	lws_jose_init(&jose);
+	memset(&jws, 0, sizeof(jws));
+	jws.context = context;
+	jws.jwk = &jwk;
+
+	if (lws_jwk_import(&jwk, NULL, NULL, (char *)lws_jwe_ex_a2_jwk_json,
+			   strlen((char *)lws_jwe_ex_a2_jwk_json)) < 0) {
+		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+		goto bail;
+	}
+
+	/* converts a compact serialization to jws b64 + decoded maps */
+	if (lws_jws_compact_decode((const char *)ex_a2_compact,
+				   strlen((char *)ex_a2_compact),
+				   &jws.map, &jws.map_b64,
+				   (char *)buf, sizeof(buf)) != 5) {
+		lwsl_err("%s: lws_jws_compact_decode failed\n", __func__);
+		goto bail;
+	}
+
+	n = lws_jwe_authenticate_and_decrypt(&jose, &jws);
+	lws_jwk_destroy(&jwk);
+	if (n < 0) {
+		lwsl_err("%s: lws_jwe_authenticate_and_decrypt failed\n",
+			 __func__);
+		goto bail;
+	}
+
+	/* allowing for trailing padding, confirm the plaintext */
+	if (jws.map.len[LJWE_CTXT] < sizeof(ex_a2_ptext) ||
+	    lws_timingsafe_bcmp(jws.map.buf[LJWE_CTXT], ex_a2_ptext,
+			        sizeof(ex_a2_ptext))) {
+		lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
+		lwsl_hexdump_notice(ex_a2_ptext, sizeof(ex_a2_ptext));
+		lwsl_hexdump_notice(jws.map.buf[LJWE_CTXT],
+				    jws.map.len[LJWE_CTXT]);
+		goto bail;
+	}
+
+	ret = 0;
+
+bail:
+	lws_jose_destroy(&jose);
+	if (ret)
+		lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
+	else
+		lwsl_notice("%s: selftest OK\n", __func__);
+
+	return ret;
+}
+
+/* A.3.  Example JWE Using AES Key Wrap and AES_128_CBC_HMAC_SHA_256
+ *
+ * This example encrypts the plaintext "Live long and prosper." to the
+ * recipient using AES Key Wrap for key encryption and
+ * AES_128_CBC_HMAC_SHA_256 for content encryption.
+ */
+
+/* "Live long and prosper." */
+static uint8_t
+
+ex_a3_ptext[] = {
 	76, 105, 118, 101, 32, 108, 111, 110,
 	103, 32, 97, 110, 100, 32,  112, 114,
 	111, 115, 112, 101, 114, 46
 },
-#endif
-*lws_jwe_ex_a2_jose_hdr = (uint8_t *)
-	"{\"alg\":\"RSA1_5\",\"enc\":\"A128CBC-HS256\"}",
 
-*lws_jwe_ex_a2_jose_hdr_b64utf8 = (unsigned char *)
-	"eyJhbGciOiJSU0ExXzUiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0",
+*ex_a3_compact = (uint8_t *)
+	"eyJhbGciOiJBMTI4S1ciLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0"
+	"."
+	"6KB707dM9YTIgHtLvtgWQ8mKwboJW3of9locizkDTHzBC2IlrT1oOQ"
+	"."
+	"AxY8DCtDaGlsbGljb3RoZQ"
+	"."
+	"KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY"
+	"."
+	"U0m_YmjN04DJvceFICbCVQ",
 
-lws_jwe_ex_a2_cek[] = {
-	  4, 211,  31, 197,  84, 157, 252, 254,
-	 11, 100, 157, 250,  63, 170, 106, 206,
-	107, 124, 212,  45, 111, 107,   9, 219,
-	200, 177,   0, 240, 143, 156,  44, 207
-},
-
-*lws_jwe_ex_a2_jwk_json = (uint8_t *)
-"{"
- "\"kty\":\"RSA\","
- "\"n\":\"sXchDaQebHnPiGvyDOAT4saGEUetSyo9MKLOoWFsueri23bOdgWp4Dy1Wl"
-	 "UzewbgBHod5pcM9H95GQRV3JDXboIRROSBigeC5yjU1hGzHHyXss8UDpre"
-	 "cbAYxknTcQkhslANGRUZmdTOQ5qTRsLAt6BTYuyvVRdhS8exSZEy_c4gs_"
-	 "7svlJJQ4H9_NxsiIoLwAEk7-Q3UXERGYw_75IDrGA84-lA_-Ct4eTlXHBI"
-	 "Y2EaV7t7LjJaynVJCpkv4LKjTTAumiGUIuQhrNhZLuF_RJLqHpM2kgWFLU"
-	 "7-VTdL1VbC2tejvcI2BlMkEpk1BzBZI0KQB0GaDWFLN-aEAw3vRw\","
- "\"e\":\"AQAB\","
- "\"d\":\"VFCWOqXr8nvZNyaaJLXdnNPXZKRaWCjkU5Q2egQQpTBMwhprMzWzpR8Sxq"
-	 "1OPThh_J6MUD8Z35wky9b8eEO0pwNS8xlh1lOFRRBoNqDIKVOku0aZb-ry"
-	 "nq8cxjDTLZQ6Fz7jSjR1Klop-YKaUHc9GsEofQqYruPhzSA-QgajZGPbE_"
-	 "0ZaVDJHfyd7UUBUKunFMScbflYAAOYJqVIVwaYR5zWEEceUjNnTNo_CVSj"
-	 "-VvXLO5VZfCUAVLgW4dpf1SrtZjSt34YLsRarSb127reG_DUwg9Ch-Kyvj"
-	 "T1SkHgUWRVGcyly7uvVGRSDwsXypdrNinPA4jlhoNdizK2zF2CWQ\","
- "\"p\":\"9gY2w6I6S6L0juEKsbeDAwpd9WMfgqFoeA9vEyEUuk4kLwBKcoe1x4HG68"
-	 "ik918hdDSE9vDQSccA3xXHOAFOPJ8R9EeIAbTi1VwBYnbTp87X-xcPWlEP"
-	 "krdoUKW60tgs1aNd_Nnc9LEVVPMS390zbFxt8TN_biaBgelNgbC95sM\","
- "\"q\":\"uKlCKvKv_ZJMVcdIs5vVSU_6cPtYI1ljWytExV_skstvRSNi9r66jdd9-y"
-	 "BhVfuG4shsp2j7rGnIio901RBeHo6TPKWVVykPu1iYhQXw1jIABfw-MVsN"
-	 "-3bQ76WLdt2SDxsHs7q7zPyUyHXmps7ycZ5c72wGkUwNOjYelmkiNS0\","
- "\"dp\":\"w0kZbV63cVRvVX6yk3C8cMxo2qCM4Y8nsq1lmMSYhG4EcL6FWbX5h9yuv"
-	 "ngs4iLEFk6eALoUS4vIWEwcL4txw9LsWH_zKI-hwoReoP77cOdSL4AVcra"
-	 "Hawlkpyd2TWjE5evgbhWtOxnZee3cXJBkAi64Ik6jZxbvk-RR3pEhnCs\","
- "\"dq\":\"o_8V14SezckO6CNLKs_btPdFiO9_kC1DsuUTd2LAfIIVeMZ7jn1Gus_Ff"
-	 "7B7IVx3p5KuBGOVF8L-qifLb6nQnLysgHDh132NDioZkhH7mI7hPG-PYE_"
-	 "odApKdnqECHWw0J-F0JWnUd6D2B_1TvF9mXA2Qx-iGYn8OVV1Bsmp6qU\","
- "\"qi\":\"eNho5yRBEBxhGBtQRww9QirZsB66TrfFReG_CcteI1aCneT0ELGhYlRlC"
-	 "tUkTRclIfuEPmNsNDPbLoLqqCVznFbvdB7x-Tl-m0l_eFTj2KiqwGqE9PZ"
-	 "B9nNTwMVvH3VRRSLWACvPnSiwP8N5Usy-WRXS-V7TbpxIhvepTfE0NNo\""
-"}"
-
-#if 0
-,
-lws_jwe_ex_a2_jwk_enc_key[] = {
-	  80, 104,  72,  58,  11, 130, 236, 139,
-	 132, 189, 255, 205,  61,  86, 151, 176,
-	  99,  40,  44, 233, 176, 189, 205,  70,
-	 202, 169,  72,  40, 226, 181, 156, 223,
-	 120, 156, 115, 232, 150, 209, 145, 133,
-	 104, 112, 237, 156, 116, 250,  65, 102,
-	 212, 210, 103, 240, 177,  61,  93,  40,
-	  71, 231, 223, 226, 240, 157,  15,  31,
-	 150,  89, 200, 215, 198, 203, 108,  70,
-	 117,  66, 212, 238, 193, 205,  23, 161,
-	 169, 218, 243, 203, 128, 214, 127, 253,
-	 215, 139,  43,  17, 135, 103, 179, 220,
-	  28,   2, 212, 206, 131, 158, 128,  66,
-	  62, 240,  78, 186, 141, 125, 132, 227,
-	  60, 137,  43,  31, 152, 199,  54,  72,
-	  34, 212, 115,  11, 152, 101,  70,  42,
-	 219, 233, 142,  66, 151, 250, 126, 146,
-	 141, 216, 190,  73,  50, 177, 146,   5,
-	  52, 247,  28, 197,  21,  59, 170, 247,
-	 181,  89, 131, 241, 169, 182, 246,  99,
-	  15,  36, 102, 166, 182, 172, 197, 136,
-	 230, 120,  60,  58, 219, 243, 149,  94,
-	 222, 150, 154, 194, 110, 227, 225, 112,
-	  39,  89, 233, 112, 207, 211, 241, 124,
-	 174,  69, 221, 179, 107, 196, 225, 127,
-	 167, 112, 226,  12, 242,  16,  24,  28,
-	 120, 182, 244, 213, 244, 153, 194, 162,
-	  69, 160, 244, 248,  63, 165, 141,   4,
-	 207, 249, 193,  79, 131,   0, 169, 233,
-	 127, 167, 101, 151, 125,  56, 112, 111,
-	 248,  29, 232,  90,  29, 147, 110, 169,
-	 146, 114, 165, 204,  71, 136,  41, 252
-}
-,
-*lws_jwe_ex_a2_jwk_enc_key_b64 = (uint8_t *)
-	"UGhIOguC7IuEvf_NPVaXsGMoLOmwvc1GyqlIKOK1nN94nHPoltGRhWhw7Zx0-kFm"
-	"1NJn8LE9XShH59_i8J0PH5ZZyNfGy2xGdULU7sHNF6Gp2vPLgNZ__deLKxGHZ7Pc"
-	"HALUzoOegEI-8E66jX2E4zyJKx-YxzZIItRzC5hlRirb6Y5Cl_p-ko3YvkkysZIF"
-	"NPccxRU7qve1WYPxqbb2Yw8kZqa2rMWI5ng8OtvzlV7elprCbuPhcCdZ6XDP0_F8"
-	"rkXds2vE4X-ncOIM8hAYHHi29NX0mcKiRaD0-D-ljQTP-cFPgwCp6X-nZZd9OHBv"
-	"-B3oWh2TbqmScqXMR4gp_A",
-
-lws_jwe_ex_a2_iv[] = {
-	  3,  22,  60,  12,  43,  67, 104, 105,
-	108, 108, 105,  99, 111, 116, 104, 101
-},
-
-*lws_jwe_ex_a2_iv_b64 = (uint8_t *)
-	"AxY8DCtDaGlsbGljb3RoZQ",
-
-lws_jwe_ex_a2_aad[] = {
-	101, 121,  74, 104,  98,  71,  99, 105,
-	 79, 105,  74,  83,  85,  48,  69, 120,
-	 88, 122,  85, 105,  76,  67,  74, 108,
-	 98, 109,  77, 105,  79, 105,  74,  66,
-	 77,  84,  73,  52,  81,  48,  74,  68,
-	 76,  85, 104,  84,  77, 106,  85,  50,
-	 73, 110,  48
-},
-
-lws_jwe_ex_a2_ciphertext[] = {
-	 40,  57,  83, 181, 119,  33, 133, 148,
-	198, 185, 243,  24, 152, 230,   6,  75,
-	129, 223, 127,  19, 210,  82, 183, 230,
-	168,  33, 215, 104, 143, 112,  56, 102
-},
-
-*lws_jwe_ex_a2_ciphertext_b64 = (uint8_t *)
-	"KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY",
-
-lws_jwe_ex_a2_authtag[] = {
-	246,  17, 244, 190,   4,  95,  98,   3,
-	231,   0, 115, 157, 242, 203, 100, 191
-},
-
-*lws_jwe_ex_a2_authtag_b64 = (uint8_t *)
-	"9hH0vgRfYgPnAHOd8stkvw",
-
-*lws_jwe_ex_a2_aggregated = (uint8_t *)
-	"eyJhbGciOiJSU0ExXzUiLCJlbmMiOiJBMTI4Q0JDLUhTMjU2In0."
-	"UGhIOguC7IuEvf_NPVaXsGMoLOmwvc1GyqlIKOK1nN94nHPoltGRhWhw7Zx0-kFm"
-	"1NJn8LE9XShH59_i8J0PH5ZZyNfGy2xGdULU7sHNF6Gp2vPLgNZ__deLKxGHZ7Pc"
-	"HALUzoOegEI-8E66jX2E4zyJKx-YxzZIItRzC5hlRirb6Y5Cl_p-ko3YvkkysZIF"
-	"NPccxRU7qve1WYPxqbb2Yw8kZqa2rMWI5ng8OtvzlV7elprCbuPhcCdZ6XDP0_F8"
-	"rkXds2vE4X-ncOIM8hAYHHi29NX0mcKiRaD0-D-ljQTP-cFPgwCp6X-nZZd9OHBv"
-	"-B3oWh2TbqmScqXMR4gp_A."
-	"AxY8DCtDaGlsbGljb3RoZQ."
-	"KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY."
-	"9hH0vgRfYgPnAHOd8stkvw"
-#endif
+*ex_a3_key = (uint8_t *)
+	"{\"kty\":\"oct\","
+	   "\"k\":\"GawgguFyGrWKav7AX4VKUg\""
+	"}"
 ;
 
-/*
- * These are the inputs and outputs from the worked example in RFC7515
- * Appendix A.1.
- *
- * 1) has a fixed header + payload, and a fixed SHA256 HMAC key, and must give
- * a fixed BASE64URL result.
- *
- * 2) has a fixed header + payload and is signed with a key given in JWK format
- */
-int
-test_jwe(struct lws_context *context)
+static int
+test_jwe_a3(struct lws_context *context)
 {
-	//const struct lws_jose_jwe_alg *jose_alg;
-	struct lws_genrsa_ctx rsactx;
+	struct lws_jose jose;
+	struct lws_jws jws;
 	struct lws_jwk jwk;
-	uint8_t enc_cek[/* sizeof(lws_jwe_ex_a2_jwk_enc_key) */ 256 + 2048];
-	char buf[2048], *p = buf, *end = buf + sizeof(buf) - 1;
-	int n;
+	char buf[2048];
+	int n, ret = -1;
 
-	/* Test 1: A.2 */
+	lws_jose_init(&jose);
+	memset(&jws, 0, sizeof(jws));
+	jws.context = context;
+	jws.jwk = &jwk;
 
-	/* Decode the JWK JSON key */
-
-	if (lws_jwk_import(&jwk, NULL, NULL, (char *)lws_jwe_ex_a2_jwk_json,
-			   strlen((char *)lws_jwe_ex_a2_jwk_json)) < 0) {
-		lwsl_notice("Failed to decode JWK test key\n");
-		return -1;
+	if (lws_jwk_import(&jwk, NULL, NULL, (char *)ex_a3_key,
+			   strlen((char *)ex_a3_key)) < 0) {
+		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+		goto bail;
 	}
 
-	if (jwk.kty != LWS_GENCRYPTO_KYT_RSA) {
-		lwsl_err("%s: unexpected kty %d\n", __func__, jwk.kty);
-
-		return -1;
+	/* converts a compact serialization to jws b64 + decoded maps */
+	if (lws_jws_compact_decode((const char *)ex_a3_compact,
+				   strlen((char *)ex_a3_compact),
+				   &jws.map, &jws.map_b64,
+				   (char *)buf, sizeof(buf)) != 5) {
+		lwsl_err("%s: lws_jws_compact_decode failed\n", __func__);
+		goto bail;
 	}
 
-	/* A.2.1: encode JOSE header and confirm matches official string */
-
-	n = lws_jws_encode_section((char *)lws_jwe_ex_a2_jose_hdr,
-				   strlen((char *)lws_jwe_ex_a2_jose_hdr), 1,
-				   &p, end);
-	if (n < 0)
+	n = lws_jwe_authenticate_and_decrypt(&jose, &jws);
+	lws_jwk_destroy(&jwk);
+	if (n < 0) {
+		lwsl_err("%s: lws_jwe_authenticate_and_decrypt failed\n",
+			 __func__);
 		goto bail;
-	if (strcmp(buf, (char *)lws_jwe_ex_a2_jose_hdr_b64utf8))
-		goto bail;
+	}
 
-	/* A.2.3: Encrypt the CEK with the recipient's public key using the
-	 *        RSAES-PKCS1-v1_5 algorithm to produce the JWE Encrypted Key.
+	/* allowing for trailing padding, confirm the plaintext */
+	if (jws.map.len[LJWE_CTXT] < sizeof(ex_a3_ptext) ||
+	    lws_timingsafe_bcmp(jws.map.buf[LJWE_CTXT], ex_a3_ptext,
+			        sizeof(ex_a3_ptext))) {
+		lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
+		lwsl_hexdump_notice(ex_a3_ptext, sizeof(ex_a3_ptext));
+		lwsl_hexdump_notice(jws.map.buf[LJWE_CTXT],
+				    jws.map.len[LJWE_CTXT]);
+		goto bail;
+	}
+
+	lwsl_notice("%s: selftest OK\n", __func__);
+
+	ret = 0;
+
+bail:
+	lws_jose_destroy(&jose);
+	if (ret)
+		lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
+	else
+		lwsl_notice("%s: selftest OK\n", __func__);
+
+	return ret;
+}
+
+/* JWA B.2.  Test Cases for AES_192_CBC_HMAC_SHA_384
+ *
+ * Unfortunately JWA just gives this test case as hex literals, not
+ * inside a JWE.  So we have to prepare the inputs "by hand".
+ */
+
+static uint8_t
+
+jwa_b2_ptext[] = {
+	0x41, 0x20, 0x63, 0x69, 0x70, 0x68, 0x65, 0x72,
+	0x20, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x20,
+	0x6d, 0x75, 0x73, 0x74, 0x20, 0x6e, 0x6f, 0x74,
+	0x20, 0x62, 0x65, 0x20, 0x72, 0x65, 0x71, 0x75,
+	0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x6f, 0x20,
+	0x62, 0x65, 0x20, 0x73, 0x65, 0x63, 0x72, 0x65,
+	0x74, 0x2c, 0x20, 0x61, 0x6e, 0x64, 0x20, 0x69,
+	0x74, 0x20, 0x6d, 0x75, 0x73, 0x74, 0x20, 0x62,
+	0x65, 0x20, 0x61, 0x62, 0x6c, 0x65, 0x20, 0x74,
+	0x6f, 0x20, 0x66, 0x61, 0x6c, 0x6c, 0x20, 0x69,
+	0x6e, 0x74, 0x6f, 0x20, 0x74, 0x68, 0x65, 0x20,
+	0x68, 0x61, 0x6e, 0x64, 0x73, 0x20, 0x6f, 0x66,
+	0x20, 0x74, 0x68, 0x65, 0x20, 0x65, 0x6e, 0x65,
+	0x6d, 0x79, 0x20, 0x77, 0x69, 0x74, 0x68, 0x6f,
+	0x75, 0x74, 0x20, 0x69, 0x6e, 0x63, 0x6f, 0x6e,
+	0x76, 0x65, 0x6e, 0x69, 0x65, 0x6e, 0x63, 0x65
+},
+
+jwa_b2_rawkey[] = {
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+	0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+	0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+	0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+	0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27,
+	0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+},
+
+jwa_b2_iv[] = {
+	0x1a, 0xf3, 0x8c, 0x2d, 0xc2, 0xb9, 0x6f, 0xfd,
+	0xd8, 0x66, 0x94, 0x09, 0x23, 0x41, 0xbc, 0x04
+},
+
+jwa_b2_e[] = {
+	0xea, 0x65, 0xda, 0x6b, 0x59, 0xe6, 0x1e, 0xdb,
+	0x41, 0x9b, 0xe6, 0x2d, 0x19, 0x71, 0x2a, 0xe5,
+	0xd3, 0x03, 0xee, 0xb5, 0x00, 0x52, 0xd0, 0xdf,
+	0xd6, 0x69, 0x7f, 0x77, 0x22, 0x4c, 0x8e, 0xdb,
+	0x00, 0x0d, 0x27, 0x9b, 0xdc, 0x14, 0xc1, 0x07,
+	0x26, 0x54, 0xbd, 0x30, 0x94, 0x42, 0x30, 0xc6,
+	0x57, 0xbe, 0xd4, 0xca, 0x0c, 0x9f, 0x4a, 0x84,
+	0x66, 0xf2, 0x2b, 0x22, 0x6d, 0x17, 0x46, 0x21,
+	0x4b, 0xf8, 0xcf, 0xc2, 0x40, 0x0a, 0xdd, 0x9f,
+	0x51, 0x26, 0xe4, 0x79, 0x66, 0x3f, 0xc9, 0x0b,
+	0x3b, 0xed, 0x78, 0x7a, 0x2f, 0x0f, 0xfc, 0xbf,
+	0x39, 0x04, 0xbe, 0x2a, 0x64, 0x1d, 0x5c, 0x21,
+	0x05, 0xbf, 0xe5, 0x91, 0xba, 0xe2, 0x3b, 0x1d,
+	0x74, 0x49, 0xe5, 0x32, 0xee, 0xf6, 0x0a, 0x9a,
+	0xc8, 0xbb, 0x6c, 0x6b, 0x01, 0xd3, 0x5d, 0x49,
+	0x78, 0x7b, 0xcd, 0x57, 0xef, 0x48, 0x49, 0x27,
+	0xf2, 0x80, 0xad, 0xc9, 0x1a, 0xc0, 0xc4, 0xe7,
+	0x9c, 0x7b, 0x11, 0xef, 0xc6, 0x00, 0x54, 0xe3
+},
+
+jwa_b2_a[] = { /* "The second principle of Auguste Kerckhoffs" */
+	0x54, 0x68, 0x65, 0x20, 0x73, 0x65, 0x63, 0x6f,
+	0x6e, 0x64, 0x20, 0x70, 0x72, 0x69, 0x6e, 0x63,
+	0x69, 0x70, 0x6c, 0x65, 0x20, 0x6f, 0x66, 0x20,
+	0x41, 0x75, 0x67, 0x75, 0x73, 0x74, 0x65, 0x20,
+	0x4b, 0x65, 0x72, 0x63, 0x6b, 0x68, 0x6f, 0x66,
+	0x66, 0x73
+},
+
+jwa_b2_tag[] = {
+	0x84, 0x90, 0xac, 0x0e, 0x58, 0x94, 0x9b, 0xfe,
+	0x51, 0x87, 0x5d, 0x73, 0x3f, 0x93, 0xac, 0x20,
+	0x75, 0x16, 0x80, 0x39, 0xcc, 0xc7, 0x33, 0xd7
+
+}
+;
+
+static int
+test_jwa_b2(struct lws_context *context)
+{
+	struct lws_jose jose;
+	struct lws_jws jws;
+	struct lws_jwk jwk;
+	int n, ret = -1;
+	char buf[2048];
+
+	lws_jose_init(&jose);
+	memset(&jws, 0, sizeof(jws));
+	jws.context = context;
+	jws.jwk = &jwk;
+
+	/*
+	 * normally all this is interpreted from the JWE blob.  But we don't
+	 * have JWE test vectors for AES_256_CBC_HMAC_SHA_512, just a standalone
+	 * one.  So we have to create it all by hand.
+	 *
+	 * See test_jwe_a3 above for a more normal usage pattern.
 	 */
 
-	if (lws_genrsa_create(&rsactx, jwk.e, context, LGRSAM_PKCS1_1_5)) {
-		lwsl_notice("%s: lws_genrsa_public_decrypt_create\n",
-			    __func__);
+	memset(&jwk, 0, sizeof(jwk));
+	jwk.kty = LWS_GENCRYPTO_KTY_OCT;
+	jwk.e[LWS_GENCRYPTO_OCT_KEYEL_K].buf = (uint8_t *)jwa_b2_rawkey;
+	jwk.e[LWS_GENCRYPTO_OCT_KEYEL_K].len = sizeof(jwa_b2_rawkey);
+
+	memcpy(buf, jwa_b2_e, sizeof(jwa_b2_e));
+
+	jws.map.buf[LJWE_IV] = (char *)jwa_b2_iv;
+	jws.map.len[LJWE_IV] = sizeof(jwa_b2_iv);
+
+	jws.map.buf[LJWE_CTXT] = buf;
+	jws.map.len[LJWE_CTXT] = sizeof(jwa_b2_e);
+
+	jws.map.buf[LJWE_ATAG] = (char *)jwa_b2_tag;
+	jws.map.len[LJWE_ATAG] = sizeof(jwa_b2_tag);
+
+	/*
+	 * Normally this comes from the JOSE header.  But this test vector
+	 * doesn't have one... so...
+	 */
+
+	if (lws_gencrypto_jwe_alg_to_definition("A128KW", &jose.alg))
 		goto bail;
-	}
+	if (lws_gencrypto_jwe_enc_to_definition("A192CBC-HS384", &jose.enc_alg))
+		goto bail;
 
-	memset(enc_cek, 0, sizeof(enc_cek));
-
-	n = lws_genrsa_public_encrypt(&rsactx, lws_jwe_ex_a2_cek,
-				      sizeof(lws_jwe_ex_a2_cek), enc_cek);
-	lws_genrsa_destroy(&rsactx);
+	n = lws_jwe_a_cbc_hs(&jose, &jws, jwa_b2_rawkey, jwa_b2_a,
+			     sizeof(jwa_b2_a));
 	if (n < 0) {
-		lwsl_err("%s: encrypt cek fail\n", __func__);
-		goto bail;
-	}
-#if 0
-	if (memcmp(enc_cek, lws_jwe_ex_a2_jwk_enc_key, sizeof(enc_cek))) {
-		lwsl_err("%s: encrypt cek wrong output\n", __func__);
-		lwsl_hexdump_notice(enc_cek, sizeof(enc_cek));
-		lwsl_hexdump_notice(lws_jwe_ex_a2_jwk_enc_key,
-				    sizeof(lws_jwe_ex_a2_jwk_enc_key));
+		lwsl_err("%s: lws_jwe_a_cbc_hs failed\n", __func__);
+
 		goto bail;
 	}
 
-
-	enc_ptr = p + 1; /* + 1 skips the . */
-	n = lws_jws_encode_section(test2, strlen(test2), 0, &p, end);
-	if (n < 0)
-		goto bail;
-	if (strcmp(enc_ptr, test2_enc))
-		goto bail;
-
-	/* 1.3: use HMAC SHA-256 with known key on the hdr . payload */
-
-	if (lws_genhmac_init(&ctx, LWS_GENHMAC_TYPE_SHA256,
-			     jwk.el.e[LWS_GENCRYPTO_RSA_KEYEL_E].buf,
-			     jwk.el.e[LWS_GENCRYPTO_RSA_KEYEL_E].len))
-		goto bail;
-	if (lws_genhmac_update(&ctx, (uint8_t *)buf, p - buf))
-		goto bail_destroy_hmac;
-	lws_genhmac_destroy(&ctx, digest);
-
-	/* 1.4: append a base64 encode of the computed HMAC digest */
-
-	enc_ptr = p + 1; /* + 1 skips the . */
-	n = lws_jws_encode_section((const char *)digest, 32, 0, &p, end);
-	if (n < 0)
-		goto bail;
-	if (strcmp(enc_ptr, hash_enc)) /* check against known B64URL hash */
-		goto bail;
-
-	/* 1.5: Check we can agree the signature matches the payload */
-
-	if (lws_jws_confirm_sig(buf, p - buf, &jwk) < 0) {
-		lwsl_notice("confirm sig failed\n");
+	/* allowing for trailing padding, confirm the plaintext */
+	if (jws.map.len[LJWE_CTXT] < sizeof(jwa_b2_ptext) ||
+	    lws_timingsafe_bcmp(jws.map.buf[LJWE_CTXT],jwa_b2_ptext,
+			        sizeof(jwa_b2_ptext))) {
+		lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
+		lwsl_hexdump_notice(jwa_b2_ptext, sizeof(jwa_b2_ptext));
+		lwsl_hexdump_notice(jws.map.buf[LJWE_CTXT],
+				    jws.map.len[LJWE_CTXT]);
 		goto bail;
 	}
 
-	lws_jwk_destroy(&jwk); /* finished with the key from the first test */
+	ret = 0;
 
-	/* Test 2: RSA256 on RFC7515 worked example */
+bail:
+	lws_jose_destroy(&jose);
+	if (ret)
+		lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
+	else
+		lwsl_notice("%s: selftest OK\n", __func__);
 
-	/* 2.1: turn the known JWK key for the RSA test into a lws_jwk */
+	return ret;
+}
 
-	if (lws_jwk_import(&jwk, rfc7515_rsa_key, strlen(rfc7515_rsa_key))) {
-		lwsl_notice("Failed to read JWK key\n");
-		goto bail2;
-	}
 
-	/* 2.2: check the signature on the test packet from RFC7515 A-1 */
 
-	if (lws_jws_confirm_sig(rfc7515_rsa_a1, strlen(rfc7515_rsa_a1),
-				&jwk) < 0) {
-		lwsl_notice("confirm rsa sig failed\n");
+/* JWA B.3.  Test Cases for AES_256_CBC_HMAC_SHA_512
+ *
+ * Unfortunately JWA just gives this test case as hex literals, not
+ * inside a JWE.  So we have to prepare the inputs "by hand".
+ */
+
+static uint8_t
+
+jwa_b3_ptext[] = {
+	0x41, 0x20, 0x63, 0x69, 0x70, 0x68, 0x65, 0x72,
+	0x20, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x20,
+	0x6d, 0x75, 0x73, 0x74, 0x20, 0x6e, 0x6f, 0x74,
+	0x20, 0x62, 0x65, 0x20, 0x72, 0x65, 0x71, 0x75,
+	0x69, 0x72, 0x65, 0x64, 0x20, 0x74, 0x6f, 0x20,
+	0x62, 0x65, 0x20, 0x73, 0x65, 0x63, 0x72, 0x65,
+	0x74, 0x2c, 0x20, 0x61, 0x6e, 0x64, 0x20, 0x69,
+	0x74, 0x20, 0x6d, 0x75, 0x73, 0x74, 0x20, 0x62,
+	0x65, 0x20, 0x61, 0x62, 0x6c, 0x65, 0x20, 0x74,
+	0x6f, 0x20, 0x66, 0x61, 0x6c, 0x6c, 0x20, 0x69,
+	0x6e, 0x74, 0x6f, 0x20, 0x74, 0x68, 0x65, 0x20,
+	0x68, 0x61, 0x6e, 0x64, 0x73, 0x20, 0x6f, 0x66,
+	0x20, 0x74, 0x68, 0x65, 0x20, 0x65, 0x6e, 0x65,
+	0x6d, 0x79, 0x20, 0x77, 0x69, 0x74, 0x68, 0x6f,
+	0x75, 0x74, 0x20, 0x69, 0x6e, 0x63, 0x6f, 0x6e,
+	0x76, 0x65, 0x6e, 0x69, 0x65, 0x6e, 0x63, 0x65
+},
+
+
+jwa_b3_rawkey[] = {
+	0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+	0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f,
+	0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+	0x18, 0x19, 0x1a, 0x1b, 0x1c, 0x1d, 0x1e, 0x1f,
+	0x20, 0x21, 0x22, 0x23, 0x24, 0x25, 0x26, 0x27,
+	0x28, 0x29, 0x2a, 0x2b, 0x2c, 0x2d, 0x2e, 0x2f,
+	0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
+	0x38, 0x39, 0x3a, 0x3b, 0x3c, 0x3d, 0x3e, 0x3f
+},
+
+jwa_b3_iv[] = {
+	0x1a, 0xf3, 0x8c, 0x2d, 0xc2, 0xb9, 0x6f, 0xfd,
+	0xd8, 0x66, 0x94, 0x09, 0x23, 0x41, 0xbc, 0x04
+},
+
+jwa_b3_e[] = {
+	0x4a, 0xff, 0xaa, 0xad, 0xb7, 0x8c, 0x31, 0xc5,
+	0xda, 0x4b, 0x1b, 0x59, 0x0d, 0x10, 0xff, 0xbd,
+	0x3d, 0xd8, 0xd5, 0xd3, 0x02, 0x42, 0x35, 0x26,
+	0x91, 0x2d, 0xa0, 0x37, 0xec, 0xbc, 0xc7, 0xbd,
+	0x82, 0x2c, 0x30, 0x1d, 0xd6, 0x7c, 0x37, 0x3b,
+	0xcc, 0xb5, 0x84, 0xad, 0x3e, 0x92, 0x79, 0xc2,
+	0xe6, 0xd1, 0x2a, 0x13, 0x74, 0xb7, 0x7f, 0x07,
+	0x75, 0x53, 0xdf, 0x82, 0x94, 0x10, 0x44, 0x6b,
+	0x36, 0xeb, 0xd9, 0x70, 0x66, 0x29, 0x6a, 0xe6,
+	0x42, 0x7e, 0xa7, 0x5c, 0x2e, 0x08, 0x46, 0xa1,
+	0x1a, 0x09, 0xcc, 0xf5, 0x37, 0x0d, 0xc8, 0x0b,
+	0xfe, 0xcb, 0xad, 0x28, 0xc7, 0x3f, 0x09, 0xb3,
+	0xa3, 0xb7, 0x5e, 0x66, 0x2a, 0x25, 0x94, 0x41,
+	0x0a, 0xe4, 0x96, 0xb2, 0xe2, 0xe6, 0x60, 0x9e,
+	0x31, 0xe6, 0xe0, 0x2c, 0xc8, 0x37, 0xf0, 0x53,
+	0xd2, 0x1f, 0x37, 0xff, 0x4f, 0x51, 0x95, 0x0b,
+	0xbe, 0x26, 0x38, 0xd0, 0x9d, 0xd7, 0xa4, 0x93,
+	0x09, 0x30, 0x80, 0x6d, 0x07, 0x03, 0xb1, 0xf6,
+},
+
+jwa_b3_a[] = { /* "The second principle of Auguste Kerckhoffs" */
+	0x54, 0x68, 0x65, 0x20, 0x73, 0x65, 0x63, 0x6f,
+	0x6e, 0x64, 0x20, 0x70, 0x72, 0x69, 0x6e, 0x63,
+	0x69, 0x70, 0x6c, 0x65, 0x20, 0x6f, 0x66, 0x20,
+	0x41, 0x75, 0x67, 0x75, 0x73, 0x74, 0x65, 0x20,
+	0x4b, 0x65, 0x72, 0x63, 0x6b, 0x68, 0x6f, 0x66,
+	0x66, 0x73
+},
+
+jws_b3_tag[] = {
+	0x4d, 0xd3, 0xb4, 0xc0, 0x88, 0xa7, 0xf4, 0x5c,
+	0x21, 0x68, 0x39, 0x64, 0x5b, 0x20, 0x12, 0xbf,
+	0x2e, 0x62, 0x69, 0xa8, 0xc5, 0x6a, 0x81, 0x6d,
+	0xbc, 0x1b, 0x26, 0x77, 0x61, 0x95, 0x5b, 0xc5
+}
+;
+
+static int
+test_jwa_b3(struct lws_context *context)
+{
+	struct lws_jose jose;
+	struct lws_jws jws;
+	struct lws_jwk jwk;
+	char buf[2048];
+	int n;
+
+	lws_jose_init(&jose);
+	memset(&jws, 0, sizeof(jws));
+	jws.context = context;
+	jws.jwk = &jwk;
+
+	/*
+	 * normally all this is interpreted from the JWE blob.  But we don't
+	 * have JWE test vectors for AES_256_CBC_HMAC_SHA_512, just a standalone
+	 * one.  So we have to create it all by hand.
+	 *
+	 * See test_jwe_a3 above for a more normal usage pattern.
+	 */
+
+	memset(&jwk, 0, sizeof(jwk));
+	jwk.kty = LWS_GENCRYPTO_KTY_OCT;
+	jwk.e[LWS_GENCRYPTO_OCT_KEYEL_K].buf = (uint8_t *)jwa_b3_rawkey;
+	jwk.e[LWS_GENCRYPTO_OCT_KEYEL_K].len = sizeof(jwa_b3_rawkey);
+
+	memcpy(buf, jwa_b3_e, sizeof(jwa_b3_e));
+
+	jws.map.buf[LJWE_IV] = (char *)jwa_b3_iv;
+	jws.map.len[LJWE_IV] = sizeof(jwa_b3_iv);
+
+	jws.map.buf[LJWE_CTXT] = buf;
+	jws.map.len[LJWE_CTXT] = sizeof(jwa_b3_e);
+
+	jws.map.buf[LJWE_ATAG] = (char *)jws_b3_tag;
+	jws.map.len[LJWE_ATAG] = sizeof(jws_b3_tag);
+
+	/*
+	 * Normally this comes from the JOSE header.  But this test vector
+	 * doesn't feature one...
+	 */
+
+	if (lws_gencrypto_jwe_alg_to_definition("A128KW", &jose.alg))
+		goto bail;
+	if (lws_gencrypto_jwe_enc_to_definition("A256CBC-HS512", &jose.enc_alg))
+		goto bail;
+
+	n = lws_jwe_a_cbc_hs(&jose, &jws, jwa_b3_rawkey, jwa_b3_a,
+			     sizeof(jwa_b3_a));
+	if (n < 0) {
+		lwsl_err("%s: lws_jwe_a_cbc_hs failed\n", __func__);
+
 		goto bail;
 	}
 
-	/* 2.3: generate our own signature for a copy of the test packet */
-
-	memcpy(buf, rfc7515_rsa_a1, strlen(rfc7515_rsa_a1));
-
-	/* set p to second . */
-	p = strchr(buf + 1, '.');
-	p1 = strchr(p + 1, '.');
-
-	if (lws_gencrypto_jwe_alg_to_definition("RSA1_5", &jose_alg)) {
-		lwsl_err("%s: RSA1_5 not supported\n", __func__);
+	/* allowing for trailing padding, confirm the plaintext */
+	if (jws.map.len[LJWE_CTXT] < sizeof(jwa_b3_ptext) ||
+	    lws_timingsafe_bcmp(jws.map.buf[LJWE_CTXT],jwa_b3_ptext,
+			        sizeof(jwa_b3_ptext))) {
+		lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
+		lwsl_hexdump_notice(jwa_b3_ptext, sizeof(jwa_b3_ptext));
+		lwsl_hexdump_notice(jws.map.buf[LJWE_CTXT],
+				    jws.map.len[LJWE_CTXT]);
 		goto bail;
 	}
-
-	n = lws_jws_sign_from_b64(buf, p - buf, p + 1, p1 - (p + 1),
-				  p1 + 1, sizeof(buf) - (p1 - buf) - 1,
-				  jose_alg, &jwk, context);
-	if (n < 0)
-		goto bail;
-
-	puts(buf);
-
-	/* 2.4: confirm our signature can be verified */
-
-	if (lws_jws_confirm_sig(buf, (p1 + 1 + n) - buf, &jwk) < 0) {
-		lwsl_notice("confirm rsa sig 2 failed\n");
-		goto bail;
-	}
-#endif
-	lws_jwk_destroy(&jwk);
-
-	/* end */
 
 	lwsl_notice("%s: selftest OK\n", __func__);
 
 	return 0;
-#if 0
-bail_destroy_hmac:
-	lws_genhmac_destroy(&ctx, NULL);
-#endif
+
 bail:
-	lws_jwk_destroy(&jwk);
-//bail2:
 	lwsl_err("%s: selftest failed ++++++++++++++++++++\n", __func__);
 
-	return 1;
+	return -1;
+}
 
+/* JWA C.  Example ECDH-ES Key Agreement Computation
+ *
+ * This example uses ECDH-ES Key Agreement and the Concat KDF to derive
+ * the CEK in the manner described in Section 4.6.  In this example, the
+ * ECDH-ES Direct Key Agreement mode ("alg" value "ECDH-ES") is used to
+ * produce an agreed-upon key for AES GCM with a 128-bit key ("enc"
+ * value "A128GCM").
+ *
+ * In this example, a producer Alice is encrypting content to a consumer
+ * Bob.  The producer (Alice) generates an ephemeral key for the key
+ * agreement computation.
+ */
+
+static const char
+
+*ex_jwa_c_jose =
+	"{\"alg\":\"ECDH-ES\","
+	 "\"enc\":\"A128GCM\","
+	 "\"apu\":\"QWxpY2U\","	/* b64u("Alice") */
+	 "\"apv\":\"Qm9i\","	/* b64u("Bob") */
+	 "\"epk\":" /* public part of A's ephemeral key */
+	 "{\"kty\":\"EC\","
+	  "\"crv\":\"P-256\","
+	  "\"x\":\"gI0GAILBdu7T53akrFmMyGcsF3n5dO7MmwNBHKW5SV0\","
+	  "\"y\":\"SLW_xSffzlPWrHEVI30DHM_4egVwt3NQqeUD7nMFpps\""
+	 "}"
+	"}"
+;
+
+static uint8_t
+ex_jwa_c_z[] = {
+	158,  86, 217,  29, 129, 113,  53, 211,
+	114, 131,  66, 131, 191, 132,  38, 156,
+	251,  49, 110, 163, 218, 128, 106,  72,
+	246, 218, 167, 121, 140, 254, 144, 196
+},
+ex_jwa_c_derived_key[] = {
+	 86, 170, 141, 234, 248,  35, 109,  32,
+	 92,  34,  40, 205, 113, 167,  16,  26
+};
+
+
+static int
+test_jwa_c(struct lws_context *context)
+{
+	uint8_t buf[2048], temp[256];
+	struct lws_jose jose;
+	struct lws_jws jws;
+	int ret = -1;
+
+	lws_jose_init(&jose);
+	memset(&jws, 0, sizeof(jws));
+	jws.context = context;
+
+	/*
+	 * again the JWA Appendix C test vectors are not in the form of a
+	 * complete JWE, but just the JWE JOSE header, so we must fake up the
+	 * pieces and perform just the (normally internal) key agreement step
+	 * for this test.
+	 *
+	 * See test_jwe_a3 above for a more normal usage pattern.
+	 */
+
+	if (lws_jwe_parse_jose(&jose, ex_jwa_c_jose, strlen(ex_jwa_c_jose),
+			       temp, sizeof(temp))) {
+		lwsl_err("%s: JOSE parse failed\n", __func__);
+
+		goto bail;
+	}
+
+	/*
+	 * The ephemeral key has been parsed into a jwk "jose.jwk_ephemeral"
+	 *
+	 *  In this example, the ECDH-ES Direct Key Agreement mode ("alg" value
+	 *  "ECDH-ES") is used to produce an agreed-upon key for AES GCM with a
+	 *  128-bit key ("enc" value "A128GCM").
+	 */
+
+	if (lws_jwa_concat_kdf(&jose, &jws, 1, buf,
+			       ex_jwa_c_z, sizeof(ex_jwa_c_z))) {
+		lwsl_err("%s: JOSE parse failed\n", __func__);
+
+		goto bail;
+	}
+
+	/* allowing for trailing padding, confirm the plaintext */
+	if (lws_timingsafe_bcmp(buf, ex_jwa_c_derived_key,
+			        sizeof(ex_jwa_c_derived_key))) {
+		lwsl_err("%s: ECDH derived key wrong\n", __func__);
+		lwsl_hexdump_notice(ex_jwa_c_derived_key,
+				    sizeof(ex_jwa_c_derived_key));
+		lwsl_hexdump_notice(buf, sizeof(ex_jwa_c_derived_key));
+		goto bail;
+	}
+
+	ret = 0;
+
+bail:
+	lws_jose_destroy(&jose);
+	if (ret)
+		lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
+	else
+		lwsl_notice("%s: selftest OK\n", __func__);
+
+	return ret;
+}
+
+
+
+#if 0
+static char *complete =
+    "{"
+      "\"protected\":"
+       "\"eyJlbmMiOiJBMTI4Q0JDLUhTMjU2In0\","
+      "\"unprotected\":"
+       "{\"jku\":\"https://server.example.com/keys.jwks\"},"
+      "\"recipients\":["
+       "{\"header\":"
+         "{\"alg\":\"RSA1_5\",\"kid\":\"2011-04-29\"},"
+        "\"encrypted_key\":"
+         "\"UGhIOguC7IuEvf_NPVaXsGMoLOmwvc1GyqlIKOK1nN94nHPoltGRhWhw7Zx0-"
+          "kFm1NJn8LE9XShH59_i8J0PH5ZZyNfGy2xGdULU7sHNF6Gp2vPLgNZ__deLKx"
+          "GHZ7PcHALUzoOegEI-8E66jX2E4zyJKx-YxzZIItRzC5hlRirb6Y5Cl_p-ko3"
+          "YvkkysZIFNPccxRU7qve1WYPxqbb2Yw8kZqa2rMWI5ng8OtvzlV7elprCbuPh"
+          "cCdZ6XDP0_F8rkXds2vE4X-ncOIM8hAYHHi29NX0mcKiRaD0-D-ljQTP-cFPg"
+          "wCp6X-nZZd9OHBv-B3oWh2TbqmScqXMR4gp_A\"},"
+       "{\"header\":"
+         "{\"alg\":\"A128KW\",\"kid\":\"7\"},"
+        "\"encrypted_key\":"
+         "\"6KB707dM9YTIgHtLvtgWQ8mKwboJW3of9locizkDTHzBC2IlrT1oOQ\"}],"
+      "\"iv\":"
+       "\"AxY8DCtDaGlsbGljb3RoZQ\","
+      "\"ciphertext\":"
+       "\"KDlTtXchhZTGufMYmOYGS4HffxPSUrfmqCHXaI9wOGY\","
+      "\"tag\":"
+       "\"Mz-VPPyU4RlcuYv1IwIvzw\""
+     "}\""
+;
+
+
+#endif
+
+int
+test_jwe(struct lws_context *context)
+{
+	int n = 0;
+
+	n |= test_jwe_a2(context);
+	n |= test_jwe_a3(context);
+	n |= test_jwa_b2(context);
+	n |= test_jwa_b3(context);
+	n |= test_jwa_c(context);
+//	n |= test_jwe_json_complete(context);
+
+	return n;
 }

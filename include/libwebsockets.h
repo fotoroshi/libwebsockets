@@ -427,8 +427,8 @@ struct lws;
 #include <libwebsockets/lws-genaes.h>
 #include <libwebsockets/lws-genec.h>
 
-#include <libwebsockets/lws-jose.h>
 #include <libwebsockets/lws-jwk.h>
+#include <libwebsockets/lws-jose.h>
 #include <libwebsockets/lws-jws.h>
 #include <libwebsockets/lws-jwe.h>
 

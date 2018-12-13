@@ -46,6 +46,7 @@ enum enum_aes_modes {
 	LWS_GAESM_OFB,
 	LWS_GAESM_XTS,		/* care... requires double-length key */
 	LWS_GAESM_GCM,
+	LWS_GAESM_KW,
 };
 
 enum enum_aes_operation {
@@ -119,21 +120,22 @@ lws_genaes_destroy(struct lws_genaes_ctx *ctx, unsigned char *tag, size_t tlen);
 /** lws_genaes_crypt() - Encrypt or decrypt
  *
  * \param ctx: your struct lws_genaes_ctx
+ * \param in: input plaintext or ciphertext
+ * \param len: length of input (which is always length of output)
+ * \param out: output plaintext or ciphertext
  * \param op: LWS_GAESO_ENC or LWS_GAESO_DEC
  * \param iv_or_nonce_ctr_or_data_unit_16: NULL, iv, nonce_ctr16, or data_unit16
  * \param stream_block_16: pointer to 16-byte stream block for CTR mode only
  * \param nc_or_iv_off: NULL or pointer to nc, or iv_off
- * \param in: input plaintext or ciphertext
- * \param len: length of input (which is always length of output)
- * \param out: output plaintext or ciphertext
+ * \param taglen: length of tag
  *
  * Encrypts or decrypts using the AES mode set when the ctx was created.
  * The last three arguments have different meanings depending on the mode:
  *
- * 				     CBC  CFB128 CFB8 CTR    ECB  OFB    XTS
- * iv_or_nonce_ctr_or_data_unit_16 : iv   iv     iv   nonce  NULL iv     dataunt
- * stream_block_16		   : NULL NULL   NULL stream NULL NULL   NULL
- * nc_or_iv_off			   : NULL iv_off NULL nc_off NULL iv_off NULL
+ * 			      KW   CBC  CFB128 CFB8 CTR    ECB  OFB    XTS
+ * iv_or_nonce_ct.._unit_16 : iv   iv   iv     iv   nonce  NULL iv     dataunt
+ * stream_block_16	    : NULL NULL NULL   NULL stream NULL NULL   NULL
+ * nc_or_iv_off		    : NULL NULL iv_off NULL nc_off NULL iv_off NULL
  *
  * For GCM:
  *

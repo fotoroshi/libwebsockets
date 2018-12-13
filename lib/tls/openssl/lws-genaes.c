@@ -49,6 +49,11 @@ lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
 	switch (ctx->k->len) {
 	case 128 / 8:
 		switch (mode) {
+		case LWS_GAESM_KW:
+			EVP_CIPHER_CTX_set_flags(ctx->ctx,
+						EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
+			ctx->cipher = EVP_aes_128_wrap();
+			break;
 		case LWS_GAESM_CBC:
 			ctx->cipher = EVP_aes_128_cbc();
 			break;
@@ -75,12 +80,17 @@ lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
 			ctx->cipher = EVP_aes_128_gcm();
 			break;
 		default:
-			return -1;
+			goto bail;
 		}
 		break;
 
 	case 192 / 8:
 		switch (mode) {
+		case LWS_GAESM_KW:
+			EVP_CIPHER_CTX_set_flags(ctx->ctx,
+						EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
+			ctx->cipher = EVP_aes_192_wrap();
+			break;
 		case LWS_GAESM_CBC:
 			ctx->cipher = EVP_aes_192_cbc();
 			break;
@@ -101,17 +111,22 @@ lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
 			break;
 		case LWS_GAESM_XTS:
 			lwsl_err("%s: AES XTS 192 invalid\n", __func__);
-			return -1;
+			goto bail;
 		case LWS_GAESM_GCM:
 			ctx->cipher = EVP_aes_192_gcm();
 			break;
 		default:
-			return -1;
+			goto bail;
 		}
 		break;
 
 	case 256 / 8:
 		switch (mode) {
+		case LWS_GAESM_KW:
+			EVP_CIPHER_CTX_set_flags(ctx->ctx,
+						EVP_CIPHER_CTX_FLAG_WRAP_ALLOW);
+			ctx->cipher = EVP_aes_256_wrap();
+			break;
 		case LWS_GAESM_CBC:
 			ctx->cipher = EVP_aes_256_cbc();
 			break;
@@ -137,7 +152,7 @@ lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
 			ctx->cipher = EVP_aes_256_gcm();
 			break;
 		default:
-			return -1;
+			goto bail;
 		}
 		break;
 
@@ -147,14 +162,14 @@ lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
 			ctx->cipher = EVP_aes_256_xts();
 			break;
 		default:
-			return -1;
+			goto bail;
 		}
 	break;
 
 	default:
 		lwsl_err("%s: unsupported AES size %d bits\n", __func__,
 			 ctx->k->len * 8);
-		return -1;
+		goto bail;
 	}
 
 	switch (ctx->op) {
@@ -172,11 +187,15 @@ lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
 	if (!n) {
 		lwsl_err("%s: cipher init failed (cipher %p)\n", __func__,
 			 ctx->cipher);
-
-		return -1;
+		lws_tls_err_describe();
+		goto bail;
 	}
 
 	return 0;
+bail:
+	EVP_CIPHER_CTX_free(ctx->ctx);
+	ctx->ctx = NULL;
+	return -1;
 }
 
 LWS_VISIBLE int
@@ -205,7 +224,7 @@ lws_genaes_destroy(struct lws_genaes_ctx *ctx, unsigned char *tag, size_t tlen)
 					//lws_tls_err_describe();
 					n = 1;
 				} else
-				if (memcmp(tag, ctx->tag, ctx->taglen)) {
+				if (lws_timingsafe_bcmp(tag, ctx->tag, ctx->taglen)) {
 					lwsl_err("%s: tag mismatch "
 						 "(bad first)\n", __func__);
 					//lws_tls_err_describe();
@@ -218,7 +237,7 @@ lws_genaes_destroy(struct lws_genaes_ctx *ctx, unsigned char *tag, size_t tlen)
 		case LWS_GAESO_DEC:
 			if (EVP_DecryptFinal_ex(ctx->ctx, buf, &outl) != 1) {
 				lwsl_err("%s: dec final failed\n", __func__);
-				//lws_tls_err_describe();
+				lws_tls_err_describe();
 				n = -1;
 			}
 			break;
@@ -277,19 +296,20 @@ lws_genaes_crypt(struct lws_genaes_ctx *ctx,
 			return -1;
 		}
 		ctx->init = 1;
-		if (ctx->mode == LWS_GAESM_GCM) {
-			/* AAD */
-			if (len)
-				if (EVP_EncryptUpdate(ctx->ctx, NULL, &olen,
-						      in, len) != 1) {
-					lwsl_err("%s: set aad failed\n",
-						 __func__);
+	}
 
-					return -1;
-				}
+	if (ctx->mode == LWS_GAESM_GCM && !out) {
+		/* AAD */
+		if (len)
+			if (EVP_EncryptUpdate(ctx->ctx, NULL, &olen,
+					      in, len) != 1) {
+				lwsl_err("%s: set aad failed\n",
+					 __func__);
 
-			return 0;
-		}
+				return -1;
+			}
+
+		return 0;
 	}
 
 	switch (ctx->op) {

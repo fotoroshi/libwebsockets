@@ -18,7 +18,24 @@ News
 
 ## New features on master
 
- - **`lws-genec` ECDH + ECDSA** - Work in progress
+ - **`JWE`** - JWE (RFC7516) Work in progress: Decryption only atm
+
+|Key Encryption|Payload authentication + crypt|
+|---|---|
+|`RSAES-PKCS1-v1.5`|`AES_128_CBC_HMAC_SHA_256`|
+|`AES128KW`|`AES_192_CBC_HMAC_SHA_384`|
+| |`AES_256_CBC_HMAC_SHA_512`|
+
+   [jwe api](https://libwebsockets.org/git/libwebsockets/tree/include/libwebsockets/lws-jwe.h), 
+   [jwe unit tests](https://libwebsockets.org/git/libwebsockets/tree/minimal-examples/api-tests/api-test-jose/jwe.c)
+
+ - **`lws-genec` ECDSA** - JWS-compatible ECDSA is supported on both OpenSSL and mbedtls... Work in progress: ECDH-ES
+
+ - **`JWS`** - JWS (RFC7515) is now supported for none, HS256/384/512, RS256/384/512, and ES256/384/512, on both OpenSSL and mbedtls
+   [jws api](https://libwebsockets.org/git/libwebsockets/tree/include/libwebsockets/lws-jws.h), 
+   [jws unit tests](https://libwebsockets.org/git/libwebsockets/tree/minimal-examples/api-tests/api-test-jose/jws.c)
+
+ - **`JWK`** - JWK (RFC7517) now supports oct, RSA and EC keys including JSON key arrays on both OpenSSL and mbedtls
 
  - **`lws-genrsa` OAEP + PSS support** - in addition to PKCS#1 1.5 padding, OAEP and PSS are
    now supported on both mbedtls and openssl backends.

@@ -3142,6 +3142,18 @@ lws_strncpy(char *dest, const char *src, size_t size)
 	return dest;
 }
 
+int
+lws_timingsafe_bcmp(const void *a, const void *b, uint32_t len)
+{
+	const uint8_t *pa = a, *pb = b;
+	uint8_t sum = 0;
+
+	while (len--)
+		sum |= (*pa++ ^ *pb++);
+
+	return sum;
+}
+
 
 typedef enum {
 	LWS_TOKZS_LEADING_WHITESPACE,

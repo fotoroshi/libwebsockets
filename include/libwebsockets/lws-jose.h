@@ -49,11 +49,6 @@ enum lws_jws_jose_hdr_indexes {
 	LWS_COUNT_JOSE_HDR_ELEMENTS
 };
 
-struct lws_jose {
-	/* jose header elements */
-	struct lws_gencrypto_keyelem e[LWS_COUNT_JOSE_HDR_ELEMENTS];
-};
-
 enum lws_jose_algtype {
 	LWS_JOSE_ENCTYPE_NONE,
 
@@ -62,6 +57,7 @@ enum lws_jose_algtype {
 	LWS_JOSE_ENCTYPE_RSASSA_PKCS1_PSS,
 
 	LWS_JOSE_ENCTYPE_ECDSA,
+	LWS_JOSE_ENCTYPE_ECDHES,
 
 	LWS_JOSE_ENCTYPE_AES_CBC,
 	LWS_JOSE_ENCTYPE_AES_CFB128,
@@ -69,9 +65,11 @@ enum lws_jose_algtype {
 	LWS_JOSE_ENCTYPE_AES_CTR,
 	LWS_JOSE_ENCTYPE_AES_ECB,
 	LWS_JOSE_ENCTYPE_AES_OFB,
-	LWS_JOSE_ENCTYPE_AES_XTS,	/* care... requires double-length key */
+	LWS_JOSE_ENCTYPE_AES_XTS,	/* care: requires double-length key */
 	LWS_JOSE_ENCTYPE_AES_GCM,
 };
+
+/* there's a table of these defined in lws-gencrypto-common.c */
 
 struct lws_jose_jwe_alg {
 	enum lws_genhash_types hash_type;
@@ -80,7 +78,23 @@ struct lws_jose_jwe_alg {
 	enum lws_jose_algtype algtype_crypto; /* the encryption cipher */
 	const char *alg; /* the JWA enc alg name, eg "ES512" */
 	const char *curve_name; /* NULL, or, eg, "P-256" */
+	unsigned short keybits_min, keybits_fixed;
+	unsigned short ivbits;
 };
+
+struct lws_jose {
+	/* jose header elements */
+	struct lws_gencrypto_keyelem e[LWS_COUNT_JOSE_HDR_ELEMENTS];
+	struct lws_jwk jwk_ephemeral;
+	const struct lws_jose_jwe_alg *alg;
+	const struct lws_jose_jwe_alg *enc_alg;
+};
+
+LWS_VISIBLE LWS_EXTERN void
+lws_jose_init(struct lws_jose *jose);
+
+LWS_VISIBLE LWS_EXTERN void
+lws_jose_destroy(struct lws_jose *jose);
 
 LWS_VISIBLE LWS_EXTERN int
 lws_gencrypto_jws_alg_to_definition(const char *alg,
@@ -93,3 +107,12 @@ lws_gencrypto_jwe_alg_to_definition(const char *alg,
 LWS_VISIBLE LWS_EXTERN int
 lws_gencrypto_jwe_enc_to_definition(const char *enc,
 				    const struct lws_jose_jwe_alg **jose);
+
+LWS_VISIBLE LWS_EXTERN int
+lws_jws_parse_jose(struct lws_jose *jose,
+		   const char *buf, int len, uint8_t *temp, int temp_len);
+
+LWS_VISIBLE LWS_EXTERN int
+lws_jwe_parse_jose(struct lws_jose *jose,
+		   const char *buf, int len, uint8_t *temp, int temp_len);
+

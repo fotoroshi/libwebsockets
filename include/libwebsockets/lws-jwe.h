@@ -19,6 +19,14 @@
  *  MA  02110-1301  USA
  *
  * included from libwebsockets.h
+ *
+ * JWE Compact Serialization consists of
+ *
+ *     BASE64URL(UTF8(JWE Protected Header)) || '.' ||
+ *     BASE64URL(JWE Encrypted Key)	     || '.' ||
+ *     BASE64URL(JWE Initialization Vector)  || '.' ||
+ *     BASE64URL(JWE Ciphertext)	     || '.' ||
+ *     BASE64URL(JWE Authentication Tag)
  */
 
 /**
@@ -43,7 +51,48 @@
  * Returns the length written to \p out, or -1.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwe_create_packet(struct lws_jwk *jwk,
-		      const struct lws_jose_jwe_alg *jose_alg,
+lws_jwe_create_packet(struct lws_jose *jose, struct lws_jwk *jwk,
 		      const char *payload, size_t len, const char *nonce,
 		      char *out, size_t out_len, struct lws_context *context);
+
+LWS_VISIBLE LWS_EXTERN void
+lws_jwe_be64(uint64_t c, uint8_t *p8);
+
+
+/**
+ * lws_jwe_authenticate_and_decrypt() - confirm and decrypt JWE
+ *
+ * \param jose: jose context
+ * \param jws: jws / jwe context... .map and .map_b64 must be filled already
+ *
+ * This is a high level JWE decrypt api that takes a jws with the maps
+ * already processed, and if the authentication passes, returns the decrypted
+ * plaintext in jws.map.buf[LJWE_CTXT] and its length in jws.map.len[LJWE_CTXT].
+ *
+ * In the jws, the following fields must have been set by the caller
+ *
+ * .context
+ * .jwk (the key encryption key)
+ * .map
+ * .map_b64
+ *
+ * Having the b64 and decoded maps filled externally makes it flexible where
+ * the data was picked from, eg, from a Complete JWE JSON serialization, a
+ * flattened one, or a Compact Serialization.
+ *
+ * Returns decrypt length, or -1 for failure.
+ */
+LWS_VISIBLE LWS_EXTERN int
+lws_jwe_authenticate_and_decrypt(struct lws_jose *jose, struct lws_jws *jws);
+
+
+
+/* only exposed because we have test vectors that need it */
+LWS_VISIBLE LWS_EXTERN int
+lws_jwe_a_cbc_hs(struct lws_jose *jose, struct lws_jws *jws, uint8_t *enc_cek,
+		 uint8_t *aad, int aad_len);
+
+/* only exposed because we have test vectors that need it */
+LWS_VISIBLE LWS_EXTERN int
+lws_jwa_concat_kdf(struct lws_jose *jose, struct lws_jws *jws, int direct,
+		   uint8_t *out, const uint8_t *shared_secret, int sslen);

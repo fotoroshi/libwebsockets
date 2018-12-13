@@ -52,9 +52,19 @@ struct lws_jwk {
 	/* generic meta key elements, like KID */
 	struct lws_gencrypto_keyelem meta[LWS_COUNT_JWK_ELEMENTS];
 	int kty;			/**< one of LWS_JWK_ */
+	char private_key; /* nonzero = has private key elements */
 };
 
 typedef int (*lws_jwk_key_import_callback)(struct lws_jwk *s, void *user);
+
+struct lws_jwk_parse_state {
+	struct lws_jwk *jwk;
+	char b64[(((8192 / 8) * 4) / 3) + 1]; /* enough for 8Kb key */
+	lws_jwk_key_import_callback per_key_cb;
+	void *user;
+	int pos;
+	unsigned short possible;
+};
 
 /** lws_jwk_import() - Create a JSON Web key from the textual representation
  *

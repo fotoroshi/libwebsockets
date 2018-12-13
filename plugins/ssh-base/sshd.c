@@ -86,18 +86,6 @@ lws_buf(uint8_t **p, void *s, uint32_t len)
 	return 0;
 }
 
-int
-lws_timingsafe_bcmp(const void *a, const void *b, uint32_t len)
-{
-	const uint8_t *pa = a, *pb = b;
-	uint8_t sum = 0;
-
-	while (len--)
-		sum |= (*pa++ ^ *pb++);
-
-	return sum;
-}
-
 void
 write_task(struct per_session_data__sshd *pss, struct lws_ssh_channel *ch,
 	   int task)
